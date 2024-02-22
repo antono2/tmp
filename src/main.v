@@ -2,6 +2,8 @@ module main
 
 import dl.loader
 
+#include <vulkan/vulkan.h>
+
 pub fn vk_make_api_version(variant u32, major u32, minor u32, patch u32) u32 {
 	return variant << 29 | major << 22 | minor << 12 | patch
 }
@@ -87,11 +89,9 @@ mut:
 	api_version         u32
 }
 
-// fn C.vkCreateInstance ( &VkInstanceCreateInfo, &VkAllocationCallbacks, &C.VkInstance ) VkResult
-
 pub type VkCreateInstance = fn (&VkInstanceCreateInfo, voidptr, &C.VkInstance) VkResult
 
-pub fn create_instance(p_create_info &VkInstanceCreateInfo, p_allocator &VkAllocationCallbacks, p_instance &C.VkInstance) VkResult {
+pub fn create_instance(p_create_info &VkInstanceCreateInfo, p_allocator voidptr, p_instance &C.VkInstance) VkResult {
 	mut dl_loader := loader.get_or_create_dynamic_lib_loader(key: 'vulkan', env_path: '', paths: [
 		'libvulkan.so.1',
 		'vulkan-1.dll',
@@ -131,25 +131,6 @@ pub enum VkInternalAllocationType {
 	vk_internal_allocation_type_max_enum   = int(0x7FFFFFFF)
 }
 
-pub type PFN_vkAllocationFunction = fn (allocationScope VkSystemAllocationScope)
-
-pub type PFN_vkFreeFunction = fn ()
-
-pub type PFN_vkInternalAllocationNotification = fn (allocationType VkInternalAllocationType, allocationScope VkSystemAllocationScope)
-
-pub type PFN_vkInternalFreeNotification = fn (allocationType VkInternalAllocationType, allocationScope VkSystemAllocationScope)
-
-pub type PFN_vkReallocationFunction = fn (allocationScope VkSystemAllocationScope)
-
-pub struct VkAllocationCallbacks {
-mut:
-	p_user_data             voidptr
-	pfn_allocation          ?PFN_vkAllocationFunction
-	pfn_reallocation        ?PFN_vkReallocationFunction
-	pfn_free                ?PFN_vkFreeFunction
-	pfn_internal_allocation ?PFN_vkInternalAllocationNotification
-	pfn_internal_free       ?PFN_vkInternalFreeNotification
-}
 
 pub struct VkInstanceCreateInfo {
 mut:
@@ -166,26 +147,6 @@ mut:
 struct Data {
 mut:
 	some_val int = 123
-}
-
-fn allocate(allocationScope VkSystemAllocationScope) {
-	println('allocate called')
-}
-
-fn reallocate(allocationScope VkSystemAllocationScope) {
-	println('reallocate called')
-}
-
-fn my_free() {
-	println('my_free called')
-}
-
-fn allocate_internally(allocationType VkInternalAllocationType, allocationScope VkSystemAllocationScope) {
-	println('allocate_internally called')
-}
-
-fn free_internally(allocationType VkInternalAllocationType, allocationScope VkSystemAllocationScope) {
-	println('free_internally called')
 }
 
 fn main() {
@@ -209,16 +170,7 @@ fn main() {
 		pp_enabled_extension_names: enabled_extension_names
 	}
 
-	allocation_callbacks := VkAllocationCallbacks{
-		p_user_data: &data
-		pfn_allocation: allocate
-		pfn_reallocation: reallocate
-		pfn_free: my_free
-		pfn_internal_allocation: allocate_internally
-		pfn_internal_free: free_internally
-	}
-
-	mut vk_result := create_instance(&create_info, &allocation_callbacks, instance)
+	mut vk_result := create_instance(&create_info, voidptr(0), instance)
 
 	if vk_result != VkResult.vk_success {
 		println("Couldn't create vulkan instance. VkResult: ${vk_result}")
