@@ -6,13 +6,22 @@ import dl.loader
 // Map of vkFunctionName to its symbol in the vulkan shared library
 pub const symbol_map = load_symbol_map()
 
+pub const lib_file_names := ['libvulkan.so.1', 'vulkan-1.dll']
+
+pub const loader_p := loader.get_or_create_dynamic_lib_loader( loader.DynamicLibLoaderConfig {
+		flags: dl.rtld_now
+		key: 'vulkan'
+		env_path: '' // LD_LIBRARY_PATH environment variable is searched by default
+		paths: lib_file_names
+	}
+) or { panic("Couldn't create vulkan loader") }
+
 // Generated from the vulkan registry and contains all VkFunctionNames
 pub const function_names_arr = ['vkCreateInstance']
 
 fn load_symbol_map() map[string]voidptr {
 	mut ret := map[string]voidptr{}
-	lib_file_names := ['libvulkan.so.1', 'vulkan-1.dll']
-
+/*
 	load_config := loader.DynamicLibLoaderConfig{
 		flags: dl.rtld_now
 		key: 'vulkan'
@@ -20,12 +29,11 @@ fn load_symbol_map() map[string]voidptr {
 		paths: lib_file_names
 	}
 	mut dl_loader := loader.get_or_create_dynamic_lib_loader(load_config) or { panic('No Loader') }
+*/
+  mut dl_loader := *loader_p
 
 /*
 	defer {
-		// Hack to keep symbols in memory, so the references stay valid until defer.
-		// TODO find another way to store generic function pointers
-		ret['just_a_hack'] = &int(123)
 		dl_loader.unregister()
 	}
 */
@@ -39,7 +47,7 @@ fn load_symbol_map() map[string]voidptr {
 	}
 
 	println('SymbolMap: ${ret}')
-
+/*
 	// Test sym here
 	mut instance := unsafe { nil }
 	create_info := InstanceCreateInfo{
@@ -60,12 +68,13 @@ fn load_symbol_map() map[string]voidptr {
 	})
 	result := f(&create_info, unsafe { nil }, &instance)
 	println('create_instance test result: ${result}')
-
+*/
 	return ret
 }
 
 fn main() {
-	// This is vk.C.Instance = voidpointer in vulkan.v and filled in create_instance
+  defer { (*loader_p).unregister() }	
+  // This is vk.C.Instance = voidpointer in vulkan.v and filled in create_instance
 	mut instance := unsafe { nil }
 
 	create_info := InstanceCreateInfo{
