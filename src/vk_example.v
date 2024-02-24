@@ -1,82 +1,9 @@
 module main
 
-import dl
-import dl.loader
-
-// Map of vkFunctionName to its symbol in the vulkan shared library
-pub const symbol_map = load_symbol_map()
-
-pub const lib_file_names := ['libvulkan.so.1', 'vulkan-1.dll']
-
-pub const loader_p := loader.get_or_create_dynamic_lib_loader( loader.DynamicLibLoaderConfig {
-		flags: dl.rtld_now
-		key: 'vulkan'
-		env_path: '' // LD_LIBRARY_PATH environment variable is searched by default
-		paths: lib_file_names
-	}
-) or { panic("Couldn't create vulkan loader") }
-
-// Generated from the vulkan registry and contains all VkFunctionNames
-pub const function_names_arr = ['vkCreateInstance']
-
-fn load_symbol_map() map[string]voidptr {
-	mut ret := map[string]voidptr{}
-/*
-	load_config := loader.DynamicLibLoaderConfig{
-		flags: dl.rtld_now
-		key: 'vulkan'
-		env_path: '' // LD_LIBRARY_PATH environment variable is searched by default
-		paths: lib_file_names
-	}
-	mut dl_loader := loader.get_or_create_dynamic_lib_loader(load_config) or { panic('No Loader') }
-*/
-  mut dl_loader := *loader_p
-
-/*
-	defer {
-		dl_loader.unregister()
-	}
-*/
-
-	for func_name in function_names_arr {
-		sym := dl_loader.get_sym(func_name) or {
-			println("Couldn't load symbol for ${func_name}: ${err}")
-			continue
-		}
-		ret[func_name] = sym
-	}
-
-	println('SymbolMap: ${ret}')
-/*
-	// Test sym here
-	mut instance := unsafe { nil }
-	create_info := InstanceCreateInfo{
-		s_type: StructureType.structure_type_instance_create_info
-		flags: 0
-		p_application_info: &ApplicationInfo{
-			p_application_name: c'Vulkan in Vlang'
-			p_engine_name: c'This is not an Engine... yet'
-			api_version: header_version_complete
-		}
-		pp_enabled_layer_names: ''.str
-		enabled_layer_count: 0
-		enabled_extension_count: 0
-		pp_enabled_extension_names: ''.str
-	}
-	f := VkCreateInstance(ret[function_names_arr[0]] or {
-		panic("create_instance test coldn't get funct_names_arr[0]")
-	})
-	result := f(&create_info, unsafe { nil }, &instance)
-	println('create_instance test result: ${result}')
-*/
-	return ret
-}
+#flag -lvulkan
 
 fn main() {
-  defer { (*loader_p).unregister() }	
-  // This is vk.C.Instance = voidpointer in vulkan.v and filled in create_instance
-	mut instance := unsafe { nil }
-
+  mut instance := unsafe{ nil }
 	create_info := InstanceCreateInfo{
 		s_type: StructureType.structure_type_instance_create_info
 		flags: 0
@@ -99,17 +26,10 @@ fn main() {
 	println('Created VkInstance ${instance}')
 }
 
-type VkCreateInstance = fn (&InstanceCreateInfo, &AllocationCallbacks, &C.Instance) Result
+fn C.vkCreateInstance(&InstanceCreateInfo, &AllocationCallbacks, &C.Instance) Result
 
 pub fn create_instance(p_create_info &InstanceCreateInfo, p_allocator &AllocationCallbacks, p_instance &C.Instance) Result {
-	println('got to create_instance')
-	f := VkCreateInstance(symbol_map['vkCreateInstance'] or {
-		panic("modules/vulkan/vulkan.v Symbol for 'vkCreateInstance' couldn't be loaded")
-	})
-	println('assigned f')
-
-// Why does it work in load_symbol_map, but not here
-	return f(p_create_info, p_allocator, p_instance)
+	return C.vkCreateInstance(p_create_info, p_allocator, p_instance)
 }
 
 pub type C.Instance = voidptr
