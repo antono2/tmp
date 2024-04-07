@@ -1,4 +1,7 @@
 # tmp
 Scratch Repo
 
-Minimal VkCreateInstance in Vlang
+Minimal Vulkan example in Vlang
+```
+v run .
+```
