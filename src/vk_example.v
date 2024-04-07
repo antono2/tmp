@@ -12,21 +12,21 @@ import time
 #include "GLFW/glfw3.h"
 #include "vulkan/vulkan.h"
 
-pub const (
-  glfw_true = 1
-  glfw_press = 1 << 0
-  glfw_key_enter = 257
-  glfw_key_escape = 256
-)
+pub const glfw_true = 1
+pub const glfw_press = 1 << 0
+pub const glfw_key_enter = 257
+pub const glfw_key_escape = 256
 
-@[typedef; heap]
+@[heap; typedef]
 struct C.GLFWwindow {
 }
+
 pub type GLFWWindow = C.GLFWwindow
 
-@[typedef; heap]
+@[heap; typedef]
 struct C.GLFWmonitor {
 }
+
 pub type GLFWMonitor = C.GLFWmonitor
 
 fn init_app(window &GLFWWindow) App {
@@ -46,18 +46,17 @@ pub mut:
 
 fn C.glfwInit() int
 pub fn glfw_initialize() bool {
-  return C.glfwInit() == glfw_true
+	return C.glfwInit() == glfw_true
 }
 
 fn C.glfwTerminate()
 pub fn glfw_terminate() {
-  C.glfwTerminate()
+	C.glfwTerminate()
 }
 
-
 fn C.glfwCreateWindow(width int, height int, title &char, monitor &C.GLFWmonitor, window &C.GLFWwindow) &C.GLFWwindow
-pub fn glfw_create_window_desc(width int, height int, title string, mut monitor &GLFWMonitor, mut window &GLFWWindow) &GLFWWindow {
-	ret := C.glfwCreateWindow(width, height, title.str,	monitor, window)
+pub fn glfw_create_window_desc(width int, height int, title string, mut monitor GLFWMonitor, mut window GLFWWindow) &GLFWWindow {
+	ret := C.glfwCreateWindow(width, height, title.str, monitor, window)
 	return ret
 }
 
@@ -73,6 +72,7 @@ pub fn glfw_get_user_pointer(window &GLFWWindow) voidptr {
 }
 
 pub type GLFWFnKey = fn (window &C.GLFWwindow, key_id int, scan_code int, action int, bit_filed int)
+
 fn C.glfwSetKeyCallback(window &C.GLFWwindow, callback GLFWFnKey)
 pub fn glfw_set_key_callback(window &GLFWWindow, callback GLFWFnKey) {
 	C.glfwSetKeyCallback(window, callback)
@@ -95,12 +95,12 @@ pub fn glfw_set_should_close(window &GLFWWindow, flag int) {
 
 fn C.glfwWindowShouldClose(window &C.GLFWwindow) int
 pub fn glfw_window_should_close(window &GLFWWindow) bool {
-  return C.glfwWindowShouldClose(window) == glfw_true
+	return C.glfwWindowShouldClose(window) == glfw_true
 }
 
 fn C.glfwPollEvents()
 pub fn glfw_poll_events() {
-  C.glfwPollEvents()
+	C.glfwPollEvents()
 }
 
 fn is_device_suitable(device &C.PhysicalDevice) bool {
@@ -121,8 +121,8 @@ fn main() {
 	// initialize the GLFW ("init" is a reserved keyword in V)
 	glfw_initialize()
 
-  mut monitor := unsafe {nil}
-  mut window := unsafe {nil}
+	mut monitor := unsafe { nil }
+	mut window := unsafe { nil }
 	window = glfw_create_window_desc(960, 480, 'Vulkan', mut monitor, mut window)
 
 	mut app := init_app(window)
@@ -145,7 +145,7 @@ fn main() {
 			p_engine_name: c'This is not an Engine... yet'
 			api_version: api_version_1_0 // header_version_complete
 		}
-//TODO: VK_KHR_surface extension for glfw
+		// TODO: VK_KHR_surface extension for glfw
 		pp_enabled_layer_names: unsafe { nil }
 		enabled_layer_count: 0
 		pp_enabled_extension_names: unsafe { nil }
@@ -165,12 +165,12 @@ fn main() {
 		panic("Couldn't find GPUs with vulkan support")
 	}
 	println('device count: ${physical_device_cnt}')
-	mut devices_c := create_c_array[C.PhysicalDevice](physical_device_cnt)
+	mut devices_c := create_c_array[PhysicalDevice](physical_device_cnt)
 	dump('devices_c sizeof pre: ${sizeof(devices_c)} bytes')
 	if enumerate_physical_devices(instance, &physical_device_cnt, devices_c) != Result.success {
 		panic("Couldn't enumerate physical devices")
 	}
-	devices := to_v_array[C.PhysicalDevice](devices_c, physical_device_cnt)
+	devices := to_v_array[PhysicalDevice](devices_c, physical_device_cnt)
 	for i in 0 .. physical_device_cnt {
 		dump(devices[i])
 		if is_device_suitable(devices[i]) {
@@ -178,9 +178,9 @@ fn main() {
 		}
 	}
 
-println("Success!")
-exit(0)
-//TODO: continue implementation here
+	println('Success!')
+	exit(0)
+	// TODO: continue implementation here
 	// glfw.get_physical_device_presentation_support((*instance), )
 
 	for !(glfw_window_should_close(window)) {
@@ -215,7 +215,7 @@ fn key_callback_function(window &GLFWWindow, key int, scancode int, action int, 
 }
 
 fn create_c_array_handles[T](len u32) []T {
-  return unsafe { []T{ init: T(malloc(int(sizeof(T)))), len: int(len) } }
+	return unsafe { []T{len: int(len), init: T(malloc(int(sizeof(T))))} }
 }
 
 fn create_c_array[T](len u32) voidptr {
@@ -1164,7 +1164,7 @@ pub type C.PhysicalDevice = voidptr
 pub type Bool32 = u32
 
 // type VkEnumeratePhysicalDevices = fn (C.Instance, &u32, []&C.PhysicalDevice) Result
-//type C.VkEnumeratePhysicalDevices = fn (&C.Instance, &u32, voidptr) Result
+// type C.VkEnumeratePhysicalDevices = fn (&C.Instance, &u32, voidptr) Result
 
 fn C.vkEnumeratePhysicalDevices(&C.Instance, &u32, []&C.PhysicalDevice) Result
 
