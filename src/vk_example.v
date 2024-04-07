@@ -1,41 +1,243 @@
 module main
 
-#flag -lvulkan
+import time
+
+#flag linux -L/usr/lib/x86_64-linux-gnu
+#flag linux -lglfw
+#flag linux -DGLFW_INCLUDE_VULKAN=1
+
+#flag linux -I/usr/include
+#flag linux -lvulkan
+
+#include "GLFW/glfw3.h"
+#include "vulkan/vulkan.h"
+
+pub const (
+  glfw_true = 1
+  glfw_press = 1 << 0
+  glfw_key_enter = 257
+  glfw_key_escape = 256
+)
+
+@[typedef; heap]
+struct C.GLFWwindow {
+}
+pub type GLFWWindow = C.GLFWwindow
+
+@[typedef; heap]
+struct C.GLFWmonitor {
+}
+pub type GLFWMonitor = C.GLFWmonitor
+
+fn init_app(window &GLFWWindow) App {
+	new_app := App{
+		main_window: unsafe { window }
+		share_data: []
+	}
+	return new_app
+}
+
+@[heap]
+struct App {
+pub mut:
+	main_window &GLFWWindow
+	share_data  []string // some data to share between callback and main()
+}
+
+fn C.glfwInit() int
+pub fn glfw_initialize() bool {
+  return C.glfwInit() == glfw_true
+}
+
+fn C.glfwTerminate()
+pub fn glfw_terminate() {
+  C.glfwTerminate()
+}
+
+
+fn C.glfwCreateWindow(width int, height int, title &char, monitor &C.GLFWmonitor, window &C.GLFWwindow) &C.GLFWwindow
+pub fn glfw_create_window_desc(width int, height int, title string, mut monitor &GLFWMonitor, mut window &GLFWWindow) &GLFWWindow {
+	ret := C.glfwCreateWindow(width, height, title.str,	monitor, window)
+	return ret
+}
+
+fn C.glfwSetWindowUserPointer(window &C.GLFWwindow, pointer voidptr)
+pub fn glfw_set_user_pointer(window &GLFWWindow, pointer voidptr) {
+	C.glfwSetWindowUserPointer(window, pointer)
+}
+
+fn C.glfwGetWindowUserPointer(window &C.GLFWwindow) voidptr
+pub fn glfw_get_user_pointer(window &GLFWWindow) voidptr {
+	ptr := C.glfwGetWindowUserPointer(window)
+	return ptr
+}
+
+pub type GLFWFnKey = fn (window &C.GLFWwindow, key_id int, scan_code int, action int, bit_filed int)
+fn C.glfwSetKeyCallback(window &C.GLFWwindow, callback GLFWFnKey)
+pub fn glfw_set_key_callback(window &GLFWWindow, callback GLFWFnKey) {
+	C.glfwSetKeyCallback(window, callback)
+}
+
+fn C.glfwMakeContextCurrent(window &C.GLFWwindow)
+pub fn glfw_make_context_current(window &GLFWWindow) {
+	C.glfwMakeContextCurrent(window)
+}
+
+fn C.glfwVulkanSupported() int
+pub fn glfw_is_vulkan_supported() bool {
+	return C.glfwVulkanSupported() == glfw_true
+}
+
+fn C.glfwSetWindowShouldClose(window &C.GLFWwindow, value int)
+pub fn glfw_set_should_close(window &GLFWWindow, flag int) {
+	C.glfwSetWindowShouldClose(window, flag)
+}
+
+fn C.glfwWindowShouldClose(window &C.GLFWwindow) int
+pub fn glfw_window_should_close(window &GLFWWindow) bool {
+  return C.glfwWindowShouldClose(window) == glfw_true
+}
+
+fn C.glfwPollEvents()
+pub fn glfw_poll_events() {
+  C.glfwPollEvents()
+}
+
+fn is_device_suitable(device &C.PhysicalDevice) bool {
+	device_properties := PhysicalDeviceProperties{}
+	get_physical_device_properties(device, device_properties)
+	return device_properties.device_type == PhysicalDeviceType.physical_device_type_discrete_gpu
+}
 
 fn main() {
-  mut instance := unsafe{ nil }
+	mut instance := unsafe { nil }
+	defer {
+		glfw_terminate()
+		unsafe {
+			free(instance)
+		}
+	}
+
+	// initialize the GLFW ("init" is a reserved keyword in V)
+	glfw_initialize()
+
+  mut monitor := unsafe {nil}
+  mut window := unsafe {nil}
+	window = glfw_create_window_desc(960, 480, 'Vulkan', mut monitor, mut window)
+
+	mut app := init_app(window)
+
+	// set user pointer to &App
+	glfw_set_user_pointer(window, &app)
+	// set callback function for keyboard input
+	glfw_set_key_callback(window, key_callback_function)
+	glfw_make_context_current(window)
+
+	if !glfw_is_vulkan_supported() {
+		panic('Vulkan is not available')
+	}
+
 	create_info := InstanceCreateInfo{
 		s_type: StructureType.structure_type_instance_create_info
 		flags: 0
 		p_application_info: &ApplicationInfo{
 			p_application_name: c'Vulkan in Vlang'
 			p_engine_name: c'This is not an Engine... yet'
-			api_version: header_version_complete
+			api_version: api_version_1_0 // header_version_complete
 		}
-		pp_enabled_layer_names: ''.str
+//TODO: VK_KHR_surface extension for glfw
+		pp_enabled_layer_names: unsafe { nil }
 		enabled_layer_count: 0
+		pp_enabled_extension_names: unsafe { nil }
 		enabled_extension_count: 0
-		pp_enabled_extension_names: ''.str
 	}
-
-	result := create_instance(&create_info, unsafe { nil }, &instance)
+	result := create_instance(create_info, unsafe { nil }, &instance)
 
 	if result != Result.success {
 		println("Couldn't create vulkan instance. VkResult: ${result}")
+	} else {
+		println('Created VkInstance ${instance}')
 	}
-	println('Created VkInstance ${instance}')
+
+	mut physical_device_cnt := u32(0)
+	enumerate_physical_devices(instance, &physical_device_cnt, unsafe { nil })
+	if physical_device_cnt == 0 {
+		panic("Couldn't find GPUs with vulkan support")
+	}
+	println('device count: ${physical_device_cnt}')
+	mut devices_c := create_c_array[C.PhysicalDevice](physical_device_cnt)
+	dump('devices_c sizeof pre: ${sizeof(devices_c)} bytes')
+	if enumerate_physical_devices(instance, &physical_device_cnt, devices_c) != Result.success {
+		panic("Couldn't enumerate physical devices")
+	}
+	devices := to_v_array[C.PhysicalDevice](devices_c, physical_device_cnt)
+	for i in 0 .. physical_device_cnt {
+		dump(devices[i])
+		if is_device_suitable(devices[i]) {
+			println('found device')
+		}
+	}
+
+println("Success!")
+exit(0)
+//TODO: continue implementation here
+	// glfw.get_physical_device_presentation_support((*instance), )
+
+	for !(glfw_window_should_close(window)) {
+		/*
+			<-- Here you can do the rendering stuff and so on.. -->
+		 */
+		// now print the data (which could come from callback) from the app struct and remove it afterwards
+		for _, s in app.share_data {
+			println(s)
+		}
+		app.share_data = []
+		glfw_poll_events()
+	}
 }
 
-fn C.vkCreateInstance(&InstanceCreateInfo, &AllocationCallbacks, &C.Instance) Result
-
-pub fn create_instance(p_create_info &InstanceCreateInfo, p_allocator &AllocationCallbacks, p_instance &C.Instance) Result {
-	return C.vkCreateInstance(p_create_info, p_allocator, p_instance)
+// Called on a keyboard event
+// GLFW_PRESS, GLFW_RELEASE or GLFW_REPEAT
+// https://www.glfw.org/docs/latest/group__keys.html
+fn key_callback_function(window &GLFWWindow, key int, scancode int, action int, mods int) {
+	if action == glfw_press {
+		// transfer the data to the app struct
+		mut app := unsafe { &App(glfw_get_user_pointer(window)) }
+		if key == glfw_key_enter {
+			// if enter key pressed
+			txt := 'Enter-key Pressed at ${time.now().str()}'
+			app.share_data << txt
+		}
+		if key == glfw_key_escape {
+			unsafe { glfw_set_should_close(window, 1) }
+		}
+	}
 }
 
-pub type C.Instance = voidptr
+fn create_c_array_handles[T](len u32) []T {
+  return unsafe { []T{ init: T(malloc(int(sizeof(T)))), len: int(len) } }
+}
+
+fn create_c_array[T](len u32) voidptr {
+	return unsafe { &T(malloc(int(sizeof(T) * len))) }
+}
+
+// NOTE: array d is consumed/freed
+fn to_v_array[T](d &T, len u32) []T {
+	mut res := unsafe { []T{len: int(len)} }
+	for i in 0 .. len {
+		unsafe {
+			res[i] = d[i]
+		}
+	}
+	unsafe {
+		free(d)
+	}
+	return res
+}
 
 pub struct InstanceCreateInfo {
-mut:
+pub mut:
 	s_type                     StructureType
 	p_next                     voidptr
 	flags                      InstanceCreateFlags
@@ -44,6 +246,49 @@ mut:
 	pp_enabled_layer_names     &char
 	enabled_extension_count    u32
 	pp_enabled_extension_names &char
+}
+
+pub fn make_api_version(variant u32, major u32, minor u32, patch u32) u32 {
+	return variant << 29 | major << 22 | minor << 12 | patch
+}
+
+pub const api_version_1_0 = make_api_version(0, 1, 0, 0) // Patch version should always be set to 0
+pub const header_version = 272
+
+pub const header_version_complete = make_api_version(0, 1, 3, header_version)
+
+pub fn version_variant(version u32) u32 {
+	return version >> 29
+}
+
+pub fn api_version_major(version u32) u32 {
+	return version >> 22 & u32(0x7F)
+}
+
+pub fn api_version_minor(version u32) u32 {
+	return version >> 12 & u32(0x3FF)
+}
+
+pub fn api_version_patch(version u32) u32 {
+	return version & u32(0xFFF)
+}
+
+pub enum InstanceCreateFlagBits {
+	instance_create_enumerate_portability_bit_khr = int(0x00000001)
+	instance_create_flag_bits_max_enum            = int(0x7FFFFFFF)
+}
+
+pub type InstanceCreateFlags = u32
+
+pub struct ApplicationInfo {
+pub mut:
+	s_type              StructureType
+	p_next              voidptr
+	p_application_name  &char
+	application_version u32
+	p_engine_name       &char
+	engine_version      u32
+	api_version         u32
 }
 
 pub enum StructureType {
@@ -863,27 +1108,6 @@ pub enum StructureType {
 	structure_type_max_enum                                                            = int(0x7FFFFFFF)
 }
 
-pub type InstanceCreateFlags = u32
-
-pub struct ApplicationInfo {
-mut:
-	s_type              StructureType
-	p_next              voidptr
-	p_application_name  &char
-	application_version u32
-	p_engine_name       &char
-	engine_version      u32
-	api_version         u32
-}
-
-pub fn make_api_version(variant u32, major u32, minor u32, patch u32) u32 {
-	return variant << 29 | major << 22 | minor << 12 | patch
-}
-
-pub const header_version = 272
-
-pub const header_version_complete = make_api_version(0, 1, 3, header_version)
-
 pub enum Result {
 	success                                            = int(0)
 	not_ready                                          = int(1)
@@ -934,6 +1158,86 @@ pub enum Result {
 	result_max_enum                                    = int(0x7FFFFFFF)
 }
 
+pub type C.Instance = voidptr
+
+pub type C.PhysicalDevice = voidptr
+pub type Bool32 = u32
+
+// type VkEnumeratePhysicalDevices = fn (C.Instance, &u32, []&C.PhysicalDevice) Result
+//type C.VkEnumeratePhysicalDevices = fn (&C.Instance, &u32, voidptr) Result
+
+fn C.vkEnumeratePhysicalDevices(&C.Instance, &u32, []&C.PhysicalDevice) Result
+
+// pub type PhysicalDevices = []&C.PhysicalDevice | voidptr
+
+pub fn enumerate_physical_devices(instance &C.Instance, p_physical_device_count &u32, p_physical_devices voidptr) Result {
+	return C.vkEnumeratePhysicalDevices(instance, p_physical_device_count, p_physical_devices)
+}
+
+pub struct PhysicalDeviceFeatures {
+pub mut:
+	robust_buffer_access                         Bool32
+	full_draw_index_uint32                       Bool32
+	image_cube_array                             Bool32
+	independent_blend                            Bool32
+	geometry_shader                              Bool32
+	tessellation_shader                          Bool32
+	sample_rate_shading                          Bool32
+	dual_src_blend                               Bool32
+	logic_op                                     Bool32
+	multi_draw_indirect                          Bool32
+	draw_indirect_first_instance                 Bool32
+	depth_clamp                                  Bool32
+	depth_bias_clamp                             Bool32
+	fill_mode_non_solid                          Bool32
+	depth_bounds                                 Bool32
+	wide_lines                                   Bool32
+	large_points                                 Bool32
+	alpha_to_one                                 Bool32
+	multi_viewport                               Bool32
+	sampler_anisotropy                           Bool32
+	texture_compression_etc2                     Bool32
+	texture_compression_astc_ldr                 Bool32
+	texture_compression_bc                       Bool32
+	occlusion_query_precise                      Bool32
+	pipeline_statistics_query                    Bool32
+	vertex_pipeline_stores_and_atomics           Bool32
+	fragment_stores_and_atomics                  Bool32
+	shader_tessellation_and_geometry_point_size  Bool32
+	shader_image_gather_extended                 Bool32
+	shader_storage_image_extended_formats        Bool32
+	shader_storage_image_multisample             Bool32
+	shader_storage_image_read_without_format     Bool32
+	shader_storage_image_write_without_format    Bool32
+	shader_uniform_buffer_array_dynamic_indexing Bool32
+	shader_sampled_image_array_dynamic_indexing  Bool32
+	shader_storage_buffer_array_dynamic_indexing Bool32
+	shader_storage_image_array_dynamic_indexing  Bool32
+	shader_clip_distance                         Bool32
+	shader_cull_distance                         Bool32
+	shader_float64                               Bool32
+	shader_int64                                 Bool32
+	shader_int16                                 Bool32
+	shader_resource_residency                    Bool32
+	shader_resource_min_lod                      Bool32
+	sparse_binding                               Bool32
+	sparse_residency_buffer                      Bool32
+	sparse_residency_image2_d                    Bool32
+	sparse_residency_image3_d                    Bool32
+	sparse_residency2_samples                    Bool32
+	sparse_residency4_samples                    Bool32
+	sparse_residency8_samples                    Bool32
+	sparse_residency16_samples                   Bool32
+	sparse_residency_aliased                     Bool32
+	variable_multisample_rate                    Bool32
+	inherited_queries                            Bool32
+}
+
+fn C.vkCreateInstance(&InstanceCreateInfo, &AllocationCallbacks, &C.Instance) Result
+pub fn create_instance(p_create_info &InstanceCreateInfo, p_allocator &AllocationCallbacks, p_instance &C.Instance) Result {
+	return C.vkCreateInstance(p_create_info, p_allocator, p_instance)
+}
+
 pub type PFN_vkAllocationFunction = fn (pUserData voidptr, size usize, alignment usize, allocationScope SystemAllocationScope) voidptr
 
 pub type PFN_vkFreeFunction = fn (pUserData voidptr, pMemory voidptr) voidptr
@@ -947,7 +1251,7 @@ pub type PFN_vkReallocationFunction = fn (pUserData voidptr, pOriginal voidptr, 
 pub type PFN_vkVoidFunction = fn ()
 
 pub struct AllocationCallbacks {
-mut:
+pub mut:
 	p_user_data             voidptr
 	pfn_allocation          PFN_vkAllocationFunction   = unsafe { nil }
 	pfn_reallocation        PFN_vkReallocationFunction = unsafe { nil }
@@ -968,4 +1272,154 @@ pub enum SystemAllocationScope {
 pub enum InternalAllocationType {
 	internal_allocation_type_executable = int(0)
 	internal_allocation_type_max_enum   = int(0x7FFFFFFF)
+}
+
+pub struct PhysicalDeviceProperties {
+pub mut:
+	api_version         u32
+	driver_version      u32
+	vendor_id           u32
+	device_id           u32
+	device_type         PhysicalDeviceType
+	device_name         [256]char
+	pipeline_cache_uuid [16]u8
+	limits              PhysicalDeviceLimits
+	sparse_properties   PhysicalDeviceSparseProperties
+}
+
+pub enum PhysicalDeviceType {
+	physical_device_type_other          = int(0)
+	physical_device_type_integrated_gpu = int(1)
+	physical_device_type_discrete_gpu   = int(2)
+	physical_device_type_virtual_gpu    = int(3)
+	physical_device_type_cpu            = int(4)
+	physical_device_type_max_enum       = int(0x7FFFFFFF)
+}
+
+pub struct PhysicalDeviceLimits {
+pub mut:
+	max_image_dimension1_d                                u32
+	max_image_dimension2_d                                u32
+	max_image_dimension3_d                                u32
+	max_image_dimension_cube                              u32
+	max_image_array_layers                                u32
+	max_texel_buffer_elements                             u32
+	max_uniform_buffer_range                              u32
+	max_storage_buffer_range                              u32
+	max_push_constants_size                               u32
+	max_memory_allocation_count                           u32
+	max_sampler_allocation_count                          u32
+	buffer_image_granularity                              DeviceSize
+	sparse_address_space_size                             DeviceSize
+	max_bound_descriptor_sets                             u32
+	max_per_stage_descriptor_samplers                     u32
+	max_per_stage_descriptor_uniform_buffers              u32
+	max_per_stage_descriptor_storage_buffers              u32
+	max_per_stage_descriptor_sampled_images               u32
+	max_per_stage_descriptor_storage_images               u32
+	max_per_stage_descriptor_input_attachments            u32
+	max_per_stage_resources                               u32
+	max_descriptor_set_samplers                           u32
+	max_descriptor_set_uniform_buffers                    u32
+	max_descriptor_set_uniform_buffers_dynamic            u32
+	max_descriptor_set_storage_buffers                    u32
+	max_descriptor_set_storage_buffers_dynamic            u32
+	max_descriptor_set_sampled_images                     u32
+	max_descriptor_set_storage_images                     u32
+	max_descriptor_set_input_attachments                  u32
+	max_vertex_input_attributes                           u32
+	max_vertex_input_bindings                             u32
+	max_vertex_input_attribute_offset                     u32
+	max_vertex_input_binding_stride                       u32
+	max_vertex_output_components                          u32
+	max_tessellation_generation_level                     u32
+	max_tessellation_patch_size                           u32
+	max_tessellation_control_per_vertex_input_components  u32
+	max_tessellation_control_per_vertex_output_components u32
+	max_tessellation_control_per_patch_output_components  u32
+	max_tessellation_control_total_output_components      u32
+	max_tessellation_evaluation_input_components          u32
+	max_tessellation_evaluation_output_components         u32
+	max_geometry_shader_invocations                       u32
+	max_geometry_input_components                         u32
+	max_geometry_output_components                        u32
+	max_geometry_output_vertices                          u32
+	max_geometry_total_output_components                  u32
+	max_fragment_input_components                         u32
+	max_fragment_output_attachments                       u32
+	max_fragment_dual_src_attachments                     u32
+	max_fragment_combined_output_resources                u32
+	max_compute_shared_memory_size                        u32
+	max_compute_work_group_count                          [3]u32
+	max_compute_work_group_invocations                    u32
+	max_compute_work_group_size                           [3]u32
+	sub_pixel_precision_bits                              u32
+	sub_texel_precision_bits                              u32
+	mipmap_precision_bits                                 u32
+	max_draw_indexed_index_value                          u32
+	max_draw_indirect_count                               u32
+	max_sampler_lod_bias                                  f32
+	max_sampler_anisotropy                                f32
+	max_viewports                                         u32
+	max_viewport_dimensions                               [2]u32
+	viewport_bounds_range                                 [2]f32
+	viewport_sub_pixel_bits                               u32
+	min_memory_map_alignment                              usize
+	min_texel_buffer_offset_alignment                     DeviceSize
+	min_uniform_buffer_offset_alignment                   DeviceSize
+	min_storage_buffer_offset_alignment                   DeviceSize
+	min_texel_offset                                      i32
+	max_texel_offset                                      u32
+	min_texel_gather_offset                               i32
+	max_texel_gather_offset                               u32
+	min_interpolation_offset                              f32
+	max_interpolation_offset                              f32
+	sub_pixel_interpolation_offset_bits                   u32
+	max_framebuffer_width                                 u32
+	max_framebuffer_height                                u32
+	max_framebuffer_layers                                u32
+	framebuffer_color_sample_counts                       SampleCountFlags
+	framebuffer_depth_sample_counts                       SampleCountFlags
+	framebuffer_stencil_sample_counts                     SampleCountFlags
+	framebuffer_no_attachments_sample_counts              SampleCountFlags
+	max_color_attachments                                 u32
+	sampled_image_color_sample_counts                     SampleCountFlags
+	sampled_image_integer_sample_counts                   SampleCountFlags
+	sampled_image_depth_sample_counts                     SampleCountFlags
+	sampled_image_stencil_sample_counts                   SampleCountFlags
+	storage_image_sample_counts                           SampleCountFlags
+	max_sample_mask_words                                 u32
+	timestamp_compute_and_graphics                        Bool32
+	timestamp_period                                      f32
+	max_clip_distances                                    u32
+	max_cull_distances                                    u32
+	max_combined_clip_and_cull_distances                  u32
+	discrete_queue_priorities                             u32
+	point_size_range                                      [2]f32
+	line_width_range                                      [2]f32
+	point_size_granularity                                f32
+	line_width_granularity                                f32
+	strict_lines                                          Bool32
+	standard_sample_locations                             Bool32
+	optimal_buffer_copy_offset_alignment                  DeviceSize
+	optimal_buffer_copy_row_pitch_alignment               DeviceSize
+	non_coherent_atom_size                                DeviceSize
+}
+
+pub type DeviceSize = u64
+
+pub type SampleCountFlags = u32
+
+pub struct PhysicalDeviceSparseProperties {
+pub mut:
+	residency_standard2_d_block_shape             Bool32
+	residency_standard2_d_multisample_block_shape Bool32
+	residency_standard3_d_block_shape             Bool32
+	residency_aligned_mip_size                    Bool32
+	residency_non_resident_strict                 Bool32
+}
+
+fn C.vkGetPhysicalDeviceProperties(C.PhysicalDevice, &PhysicalDeviceProperties)
+pub fn get_physical_device_properties(physical_device C.PhysicalDevice, p_properties &PhysicalDeviceProperties) {
+	C.vkGetPhysicalDeviceProperties(physical_device, p_properties)
 }
