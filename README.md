@@ -1,6 +1,6 @@
 # tmp
 Scratch Repo
-@[keep_flags_alive] example with void functions
+@[keep_args_alive] example with void functions
 
 ```
 git clone --depth=1 https://github.com/antono2/tmp
