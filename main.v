@@ -2,7 +2,7 @@ module main
 
 import some_module as sm
 
-// NOTE: Build array.h as shared library
+// NOTE: Build array.c as shared library
 // gcc -c -fPIC include/array.c
 // gcc -fPIC -shared array.o
 #flag -L @VMODROOT
@@ -30,6 +30,7 @@ enum Flag_bits_main {
 	aaaa = 0
 	bbbb = 1
 	cccc = 2
+	max_enum = max_int
 }
 
 pub type Flags = u32

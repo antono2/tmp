@@ -1,0 +1,38 @@
+Not sure if its a bug or doesn't matter. [keep_args_alive] attribute https://github.com/vlang/v/blob/master/doc/docs.md#attributes doesn't seem to work here https://github.com/antono2/tmp/tree/d9b82430ea5324a5359ba4e4ca5ae87210c3d467. Otherwise it's an example of C interop
+
+
+anton@i7:~/workspace/v_vulkan_video$ lldb v
+(lldb) target create "v"
+Current executable set to '/usr/local/bin/v' (x86_64).
+(lldb) 
+run -shared -cg -cc gcc run /home/anton/workspace/v_vulkan_video/src/vulkan/
+
+Process 351669 launched: '/usr/local/bin/v' (x86_64)
+Process 351669 stopped and restarted: thread 1 received signal: SIGCHLD
+Process 351669 stopped and restarted: thread 1 received signal: SIGCHLD
+Terminated by signal 11 (SIGSEGV)
+Process 351669 exited with status = 139 (0x0000008b)
+(lldb) bt
+error: Command requires a process which is currently stopped.
+(lldb) thread 1
+"1" is not a valid subcommand of "thread". Valid subcommands are: backtrace, continue, exception, info, jump, and others. Use "help thread" to find out more.
+(lldb) run -shared -cg -cc gcc run src/vulkan/
+Process 357904 launched: '/usr/local/bin/v' (x86_64)
+Process 357904 stopped and restarted: thread 1 received signal: SIGCHLD
+Process 357904 stopped and restarted: thread 1 received signal: SIGCHLD
+Terminated by signal 11 (SIGSEGV)
+Process 357904 exited with status = 139 (0x0000008b)
+(lldb) 
+process handle SIGSEGV --notify true --pass true --stop true
+process handle SIGCHLD --notify true --pass true --stop true
+NAME         PASS   STOP   NOTIFY
+===========  =====  =====  ======
+SIGSEGV      true   true   true
+(lldb) run -shared -cg -cc gcc run src/vulkan
+Process 358054 launched: '/usr/local/bin/v' (x86_64)
+Process 358054 stopped and restarted: thread 1 received signal: SIGCHLD
+Process 358054 stopped and restarted: thread 1 received signal: SIGCHLD
+Terminated by signal 11 (SIGSEGV)
+Process 358054 exited with status = 139 (0x0000008b)
+(lldb)
+
