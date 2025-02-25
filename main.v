@@ -7,7 +7,7 @@ import dl.loader
 // gcc -c -fPIC include/array.c
 // gcc -fPIC -shared array.o
 
-#flag -L @VMODROOT
+//#flag -L @VMODROOT
 //#flag -I @VMODROOT/include
 //#include "array.c"
 
