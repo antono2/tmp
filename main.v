@@ -46,7 +46,7 @@ fn C.get_string_array() &&char
 @[inline]
 pub fn get_string_array() &&char {
 	f := PFN_get_string_array((*p_loader).get_sym('get_string_array') or {
-		println("Could not load symbol for 'get_array_struct': ${err}")
+		println("Could not load symbol for 'get_string_array': ${err}")
 		return &&char(0)
 	})
 	return f()
@@ -97,7 +97,7 @@ pub type PFN_get_stub_main = fn ([2]Flag_bits_main)
 @[inline]
 pub fn get_stub_main(param [2]Flag_bits_main) {
 	f := PFN_get_stub_main((*p_loader).get_sym('get_stub_main') or {
-		println("Couldn't load symbol for 'get_stub_main': ${err}")
+		println("Could not load symbol for 'get_stub_main': ${err}")
 		return
 	})
 	f(param)
