@@ -3,6 +3,7 @@ module main
 import some_module as sm
 import dl
 import dl.loader
+import v.vmod
 // NOTE: Build array.c as shared library
 // gcc -c -fPIC include/array.c
 // gcc -fPIC -shared array.o
@@ -103,11 +104,49 @@ pub fn get_stub_main(param [2]Flag_bits_main) {
 	f(param)
 }
 
+// const get_lib_names_from_vmod := fn [str_arr []string]{
+// 	mut ret := []string{}
+// 	for str in str_arr {
+// 		ret << str.trim_space().trim(',')
+// 	}
+// 	return ret
+// }
+
+// pub const path_to_libdir = @env('PATH_TO_LIBDIR')
 const loader_instance = *loader.get_or_create_dynamic_lib_loader(loader.DynamicLibLoaderConfig{
 	flags:    dl.rtld_lazy
 	key:      'my_key'
-	env_path: '' // LD_LIBRARY_PATH environment variable is searched by default
-	paths:    ['a.out']
+	env_path: $env('PATH_TO_LIBDIR') // LD_LIBRARY_PATH environment variable is searched by default
+	paths:    [
+		vmod.decode(@VMOD_FILE) or { vmod.Manifest{} }.unknown['lib_filenames'] or {
+			[
+				'CAN_NOT_BE_EMPTY_STRING',
+			]
+		}[0].split(',')[0] or { 'CAN_NOT_BE_EMPTY_STRING' }.trim_space(),
+		vmod.decode(@VMOD_FILE) or { vmod.Manifest{} }.unknown['lib_filenames'] or {
+			[
+				'CAN_NOT_BE_EMPTY_STRING',
+			]
+		}[0].split(',')[1] or { 'CAN_NOT_BE_EMPTY_STRING' }.trim_space(),
+		vmod.decode(@VMOD_FILE) or { vmod.Manifest{} }.unknown['lib_filenames'] or {
+			[
+				'CAN_NOT_BE_EMPTY_STRING',
+			]
+		}[0].split(',')[2] or { 'CAN_NOT_BE_EMPTY_STRING' }.trim_space(),
+		vmod.decode(@VMOD_FILE) or { vmod.Manifest{} }.unknown['lib_filenames'] or {
+			[
+				'CAN_NOT_BE_EMPTY_STRING',
+			]
+		}[0].split(',')[3] or { 'CAN_NOT_BE_EMPTY_STRING' }.trim_space(),
+		vmod.decode(@VMOD_FILE) or { vmod.Manifest{} }.unknown['lib_filenames'] or {
+			[
+				'CAN_NOT_BE_EMPTY_STRING',
+			]
+		}[0].split(',')[4] or { 'CAN_NOT_BE_EMPTY_STRING' }.trim_space(),
+		//'a.out',
+		'a-1.dll',
+		'a.so.1',
+	]
 }) or { panic('Could not create loader instance') }
 pub const p_loader = &loader_instance
 
