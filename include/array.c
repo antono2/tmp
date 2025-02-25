@@ -14,7 +14,6 @@ int array_string_set(array_t *array, int index, char *string);
 char* array_string_get(array_t *array, int index);
 int array_string_len(array_t *array);
 */
-//extern char** get_string_array();
 
 
 typedef enum flag_bits {
@@ -32,7 +31,7 @@ typedef enum flag_bits_main {
 typedef struct {
   array_t arr[4];
   flag_bits enu[2];
-} struct_array;
+} array_struct;
 typedef uint32_t flags;
 
 typedef union union_t {
@@ -129,7 +128,7 @@ char** get_string_array() {
 	return array->array_ptr;
 }
 
-struct_array get_struct_array() {
+array_struct get_array_struct() {
   int i;
   array_t* array = array_string_new(4, 4);
 
@@ -138,7 +137,7 @@ struct_array get_struct_array() {
   array_string_set(array, 2, "bat");
   array_string_set(array, 3, ".... overflowed string");
 
-  struct_array ret;
+  array_struct ret;
   for(i = 0; i < array_string_len(array); i++) {
     ret.arr[i] = *array;
   };
@@ -163,5 +162,5 @@ union_t get_union() {
 
 void get_stub(flag_bits param[2]) {}
 
-void get_stub_main(flag_bits_main[2]) {}
+void get_stub_main(flag_bits_main param[2]) {}
 

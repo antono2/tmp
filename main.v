@@ -1,75 +1,92 @@
 module main
 
 import some_module as sm
-
+import dl
+import dl.loader
 // NOTE: Build array.c as shared library
 // gcc -c -fPIC include/array.c
 // gcc -fPIC -shared array.o
-#flag -L @VMODROOT
-#flag -I @VMODROOT/include
-#include "array.c"
 
-pub type Array_t = C.array_t
-@[typedef]
-struct C.array_t {
+#flag -L @VMODROOT
+//#flag -I @VMODROOT/include
+//#include "array.c"
+
+struct Array_t {
 pub mut:
 	array_ptr  &&char
 	array_len  int
 	string_len int
 }
 
-pub type Struct_array = C.struct_array
-@[typedef]
-struct C.struct_array {
+struct ArrayStruct {
 pub mut:
 	arr [4]Array_t
 	enu [2]sm.Flag_bits
 }
 
 enum Flag_bits_main {
-	aaaa = 0
-	bbbb = 1
-	cccc = 2
+	aaaa     = 0
+	bbbb     = 1
+	cccc     = 2
 	max_enum = max_int
 }
 
 pub type Flags = u32
 
-pub type Union_t = C.union_t
-@[typedef]
-pub union C.union_t {
+pub union Union_t {
 pub mut:
 	float32 [4]f32
 	int32   [4]i32
 	uint32  [4]u32
 }
 
+pub type PFN_get_string_array = fn () &&char
 
 fn C.get_string_array() &&char
 @[inline]
 pub fn get_string_array() &&char {
-	return C.get_string_array()
+	f := PFN_get_string_array((*p_loader).get_sym('get_string_array') or {
+		println("Could not load symbol for 'get_array_struct': ${err}")
+		return &&char(0)
+	})
+	return f()
 }
 
-pub type PFN_get_struct_array = fn() Struct_array
-fn C.get_struct_array() Struct_array
+pub type PFN_get_array_struct = fn () ArrayStruct
+
+fn C.get_array_struct() ArrayStruct
 @[inline]
-pub fn get_struct_array() Struct_array {
-	return C.get_struct_array()
+pub fn get_array_struct() ArrayStruct {
+	f := PFN_get_array_struct((*p_loader).get_sym('get_array_struct') or {
+		println("Could not load symbol for 'get_array_struct': ${err}")
+		return ArrayStruct{}
+	})
+	return f()
 }
 
-pub type PFN_get_enum = fn() Flags
+pub type PFN_get_enum = fn () Flags
+
 fn C.get_enum() Flags
 @[inline]
 pub fn get_enum() Flags {
-	return C.get_enum()
+	f := PFN_get_enum((*p_loader).get_sym('get_enum') or {
+		println("Could not load symbol for 'get_enum': ${err}")
+		return max_int
+	})
+	return f()
 }
+
+pub type PFN_get_union = fn () Union_t
 
 fn C.get_union() Union_t
 
 @[inline]
 pub fn get_union() Union_t {
-	return C.get_union()
+	f := PFN_get_union((*p_loader).get_sym('get_union') or {
+		println("Could not load symbol for 'get_union': ${err}")
+		return Union_t{}
+	})
+	return f()
 }
 
 // @[keep_args_alive]
@@ -79,24 +96,36 @@ pub type PFN_get_stub_main = fn ([2]Flag_bits_main)
 
 @[inline]
 pub fn get_stub_main(param [2]Flag_bits_main) {
-	C.get_stub_main(param)
+	f := PFN_get_stub_main((*p_loader).get_sym('get_stub_main') or {
+		println("Couldn't load symbol for 'get_stub_main': ${err}")
+		return
+	})
+	f(param)
 }
+
+const loader_instance = *loader.get_or_create_dynamic_lib_loader(loader.DynamicLibLoaderConfig{
+	flags:    dl.rtld_lazy
+	key:      'my_key'
+	env_path: '' // LD_LIBRARY_PATH environment variable is searched by default
+	paths:    ['a.out']
+}) or { panic('Could not create loader instance') }
+pub const p_loader = &loader_instance
 
 fn main() {
 	string_array := get_string_array()
-	struct_array := get_struct_array()
+	array_struct := get_array_struct()
 	flags := get_enum()
 	union_t := get_union()
 	println(unsafe { string_array[3].vstring() })
-	println(unsafe { struct_array.arr[3].array_ptr.vstring() })
+	println(unsafe { array_struct.arr[3].array_ptr.vstring() })
 	// enu[1] is not set in C, so V sets it to output: unknown enum value
-	println(unsafe { sm.Flag_bits(struct_array.enu[1]) })
+	println(unsafe { sm.Flag_bits(array_struct.enu[1]) })
 	println(unsafe { sm.Flag_bits(flags) })
 	println('union_t size: ${sizeof(union_t)} type: ${typeof(union_t).name}')
 	union_t_value := unsafe { union_t.uint32[0] }
 	println('union_t value: ${union_t_value}')
 
-	sm.get_stub([2]sm.Flag_bits{init: sm.Flag_bits.bbb})
+	sm.get_stub(p_loader, [2]sm.Flag_bits{init: sm.Flag_bits.bbb})
 
 	get_stub_main([2]Flag_bits_main{init: Flag_bits_main.bbbb})
 }
