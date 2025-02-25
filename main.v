@@ -89,7 +89,7 @@ pub fn get_union() Union_t {
 	return f()
 }
 
-// @[keep_args_alive]
+@[keep_args_alive]
 fn C.get_stub_main([2]Flag_bits_main)
 
 pub type PFN_get_stub_main = fn ([2]Flag_bits_main)
