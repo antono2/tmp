@@ -5,12 +5,12 @@ module imgui
 pub const version = '1.91.9 WIP'
 pub const version_num = 19187
 
-pub type C.ImGuiContext = voidptr
-pub type C.ImWchar = voidptr
-pub type C.va_list = voidptr
 pub type C.ImGuiInputTextCallback = voidptr
+pub type C.ImGuiContext = voidptr
 pub type C.ImGuiSizeCallback = voidptr
+pub type C.ImWchar = voidptr
 pub type C.ImDrawListSharedData = voidptr
+pub type C.va_list = voidptr
 
 pub type ImGuiInputTextCallback = fn(data &ImGuiInputTextCallbackData) int
 pub type ImGuiSizeCallback = fn(data &ImGuiSizeCallbackData)

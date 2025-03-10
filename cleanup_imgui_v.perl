@@ -187,6 +187,8 @@ my %struct_member_types;
 # All function parameter types and return types.
 my @func_param_content = $content =~ /(?:[^\/]fn\s\w+\()(.*)/gc;
 print pos $content;
+pos($content) = 0; # reset the search location
+print pos $content;
 #my @func_param_content = $content =~ /(?:(?:\w+\s(?!fn)(?:&?)*)\s?(\w+))/gc;
 
 # Also get the callback function defintions
@@ -217,9 +219,10 @@ foreach my $func_params (@func_param_content) {
   }
 }
 
+pos($content) = 0; # reset the search location
 # Do the same for struct member types, like &ImFontBuilderIO in struct ImFontAtlas {
 my @struct_scope_content =
-  $content =~ /(?:struct\s\w+\s\{((?:[[:print:]\s][^\}])+)\})/g;
+  $content =~ /(?:struct\s\w+\s\{((?:[[:print:]\s][^\}])+)\})/gc;
 
 use Data::Dumper;
 print Dumper(\@struct_scope_content);
