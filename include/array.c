@@ -9,15 +9,6 @@ typedef struct {
   int string_len;
 } array_t;
 
-/*
-array_t* array_string_new(int array_len, int string_len);
-int array_string_set(array_t *array, int index, char *string);
-char* array_string_get(array_t *array, int index);
-int array_string_len(array_t *array);
-*/
-//extern char** get_string_array();
-
-
 typedef enum flag_bits {
 	AAA = 0,
 	BBB = 1,
@@ -89,35 +80,6 @@ array_string_free(array_t *array)
   free(array->array_ptr);
   return 0;
 }
-
-/*
-int main()
-{
-  int i;
-  array_t *array = array_string_new(4, 4);
-
-  array_string_set(array, 0, "foo");
-  array_string_set(array, 1, "bar");
-  array_string_set(array, 2, "bat");
-  array_string_set(array, 3, ".... overflowed string");
-
-  for(i = 0; i < array_string_len(array); i++)
-    printf("index: %d - value: %s\n", i, array_string_get(array, i));
-
-    // output:
-
-    //  index: 0 - value: foo
-    //  index: 1 - value: bar
-    //  index: 2 - value: bat
-    //  index: 3 - value: ...
-
-
-
-  array_string_free(array);
-
-  return 0;
-}
-*/
 
 char** get_string_array() {
   array_t *array = array_string_new(4, 4);
