@@ -82,10 +82,10 @@ pub fn get_stub_main(param [2]Flag_bits_main) {
 }
 
 // @[keep_args_alive]
-// fn C.set_struct_array(C.struct_array)
-// pub type PFN_set_struct_array = fn (C.struct_array)
+// fn C.set_struct_array(&C.struct_array)
+// pub type PFN_set_struct_array = fn (&C.struct_array)
 // @[inline]
-// pub fn set_struct_array(param C.struct_array) {
+// pub fn set_struct_array(param &C.struct_array) {
 //   C.set_struct_array(param) 
 // }
 
@@ -110,10 +110,10 @@ fn main() {
 	println('union_t size: ${sizeof(union_t)} type: ${typeof(union_t).name}')
 	union_t_value := unsafe { union_t.uint32[0] }
 	println('union_t value: ${union_t_value}')
-
 	sm.get_stub([2]sm.Flag_bits{init: sm.Flag_bits.bbb})
-
 	get_stub_main([2]Flag_bits_main{init: Flag_bits_main.bbbb})
 
-	set_struct_array(&struct_array)
+ 	// set_struct_array(&C.struct_array{})
+ 	set_struct_array(&Struct_array{})
+ 	set_struct_array(&struct_array)
 }

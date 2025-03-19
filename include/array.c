@@ -164,11 +164,11 @@ union_t get_union() {
 
 void get_stub(flag_bits param[2]) {}
 
-void get_stub_main(flag_bits_main[2]) {}
+void get_stub_main(flag_bits_main param[2]) {}
 
 void
 set_struct_array(struct_array* param)
 {
-  puts("set struct_array\n");
+  puts("\nset struct_array\n");
 }
 
