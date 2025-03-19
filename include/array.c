@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 typedef struct {
   char **array_ptr;
@@ -164,4 +165,10 @@ union_t get_union() {
 void get_stub(flag_bits param[2]) {}
 
 void get_stub_main(flag_bits_main[2]) {}
+
+void
+set_struct_array(struct_array* param)
+{
+  puts("set struct_array\n");
+}
 

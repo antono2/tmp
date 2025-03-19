@@ -71,7 +71,7 @@ pub fn get_union() Union_t {
 	return C.get_union()
 }
 
-// @[keep_args_alive]
+@[keep_args_alive]
 fn C.get_stub_main([2]Flag_bits_main)
 
 pub type PFN_get_stub_main = fn ([2]Flag_bits_main)
@@ -81,6 +81,23 @@ pub fn get_stub_main(param [2]Flag_bits_main) {
 	C.get_stub_main(param)
 }
 
+// @[keep_args_alive]
+// fn C.set_struct_array(C.struct_array)
+// pub type PFN_set_struct_array = fn (C.struct_array)
+// @[inline]
+// pub fn set_struct_array(param C.struct_array) {
+//   C.set_struct_array(param) 
+// }
+
+@[keep_args_alive]
+fn C.set_struct_array(&Struct_array)
+pub type PFN_set_struct_array = fn (&Struct_array)
+@[inline]
+pub fn set_struct_array(param &Struct_array) {
+  C.set_struct_array(param) 
+}
+
+
 fn main() {
 	string_array := get_string_array()
 	struct_array := get_struct_array()
@@ -88,7 +105,6 @@ fn main() {
 	union_t := get_union()
 	println(unsafe { string_array[3].vstring() })
 	println(unsafe { struct_array.arr[3].array_ptr.vstring() })
-	// enu[1] is not set in C, so V sets it to output: unknown enum value
 	println(unsafe { sm.Flag_bits(struct_array.enu[1]) })
 	println(unsafe { sm.Flag_bits(flags) })
 	println('union_t size: ${sizeof(union_t)} type: ${typeof(union_t).name}')
@@ -98,4 +114,6 @@ fn main() {
 	sm.get_stub([2]sm.Flag_bits{init: sm.Flag_bits.bbb})
 
 	get_stub_main([2]Flag_bits_main{init: Flag_bits_main.bbbb})
+
+	set_struct_array(&struct_array)
 }
