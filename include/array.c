@@ -24,11 +24,21 @@ typedef enum flag_bits {
 	CCC = 2
 } flag_bits;
 
+typedef enum flag_bits2 {
+	dsntmatter2
+} flag_bits2;
+
 typedef enum flag_bits_main {
 	AAAA = 0,
 	BBBB = 1,
-	CCCC = 2
+	CCCC = 2,
+	// Note: flag_bits.AAA | flag_bits.BBB ...
+	DDDD = AAA | BBB | CCC
 } flag_bits_main;
+
+typedef enum flag_bits_main2 {
+	dsntmatter
+} flag_bits_main2;
 
 typedef struct {
   array_t arr[4];
@@ -172,3 +182,20 @@ set_struct_array(struct_array* param)
   puts("\nset struct_array\n");
 }
 
+void
+set_const_struct_array(const struct_array* param)
+{
+  puts("\nset const_struct_array\n");
+}
+
+void
+set_enum_array(flag_bits_main2 param[2])
+{
+  puts("\nset enum_array\n");
+}
+
+void
+set_enum_array_submodule(void* param1, flag_bits2 param2[2])
+{
+  puts("\nset enum_array_submodule\n");
+}
