@@ -6,6 +6,10 @@ pub enum Flag_bits {
 	ccc = 2
 }
 
+pub enum Flag_bits2 {
+  dsntmatter2
+}
+
 @[keep_args_alive]
 fn C.get_stub([2]Flag_bits)
 
