@@ -183,6 +183,11 @@ set_struct_array(struct_array* param)
 }
 
 void
+set_const_struct_array_array(const struct_array* param)
+{
+  puts("\nset const_struct_array_array\n");
+}
+
 set_const_struct_array(const struct_array* param)
 {
   puts("\nset const_struct_array\n");
@@ -199,3 +204,18 @@ set_enum_array_submodule(void* param1, flag_bits2 param2[2])
 {
   puts("\nset enum_array_submodule\n");
 }
+
+typedef struct struct_array* struct_array_handle;
+
+void
+set_struct_array_handle(struct_array_handle param)
+{
+  puts("\nset struct_array_handle\n");
+}
+
+void
+set_struct_array_handle_array(struct_array_handle* param)
+{
+  puts("\nset struct_array_handle_array\n");
+}
+
