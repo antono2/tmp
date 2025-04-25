@@ -138,13 +138,13 @@ pub fn set_struct_array_handle(mut param Struct_array_handle) {
 }
 
 @[keep_args_alive]
-fn C.set_struct_array_handle_array(mut &Struct_array_handle)
+fn C.set_struct_array_handle_array(&Struct_array_handle)
 
-pub type PFN_set_struct_array_handle = fn (mut &Struct_array_handle)
+pub type PFN_set_struct_array_handle_array = fn (&Struct_array_handle)
 
 @[inline]
-pub fn set_struct_array_handle_array(mut param &Struct_array_handle) {
-	C.set_struct_array_handle_array(mut param)
+pub fn set_struct_array_handle_array(param &Struct_array_handle) {
+	C.set_struct_array_handle_array(param)
 }
 
 fn main() {
@@ -171,7 +171,7 @@ fn main() {
 	set_struct_array_handle(mut struct_array_handle)
 	mut struct_array_handle_array := []Struct_array_handle{init: struct_array_handle, len: 1, cap: 1}
 	// mut struct_array_handle_array := [struct_array_handle].data // works as well
-  mut struct_array_handle_array_param := struct_array_handle_array.data	
-	set_struct_array_handle_array(mut struct_array_handle_array_param) //array can not be modified, so use a tmp variable?
+  struct_array_handle_array_param := struct_array_handle_array.data	
+	set_struct_array_handle_array(struct_array_handle_array_param) //array can not be modified, so use a tmp variable?
 	
 }
