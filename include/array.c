@@ -157,7 +157,7 @@ set_enum_array(flag_bits_main2 param[2])
 }
 
 void
-set_enum_array_submodule(void* param1, flag_bits2 param2[2])
+set_enum_array_submodule(void* param, flag_bits2 paramm[2])
 {
   puts("\nset enum_array_submodule\n");
 }
