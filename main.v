@@ -2,12 +2,14 @@ module main
 
 import some_module as sm
 
+// NOTE: Build array.h as shared library
+// gcc -c -fPIC include/array.c
+// gcc -fPIC -shared array.o
 #flag -L @VMODROOT
 #flag -I @VMODROOT/include
 #include "array.c"
 
 pub type Array_t = C.array_t
-
 @[typedef]
 struct C.array_t {
 pub mut:
@@ -17,7 +19,6 @@ pub mut:
 }
 
 pub type Struct_array = C.struct_array
-
 @[typedef]
 struct C.struct_array {
 pub mut:
@@ -33,13 +34,12 @@ enum Flag_bits_main {
 }
 
 enum Flag_bits_main2 {
-	dsntmatter
+  dsntmatter
 }
 
 pub type Flags = u32
 
 pub type Union_t = C.union_t
-
 @[typedef]
 pub union C.union_t {
 pub mut:
@@ -48,22 +48,21 @@ pub mut:
 	uint32  [4]u32
 }
 
+
 fn C.get_string_array() &&char
 @[inline]
 pub fn get_string_array() &&char {
 	return C.get_string_array()
 }
 
-pub type PFN_get_struct_array = fn () Struct_array
-
+pub type PFN_get_struct_array = fn() Struct_array
 fn C.get_struct_array() Struct_array
 @[inline]
 pub fn get_struct_array() Struct_array {
 	return C.get_struct_array()
 }
 
-pub type PFN_get_enum = fn () Flags
-
+pub type PFN_get_enum = fn() Flags
 fn C.get_enum() Flags
 @[inline]
 pub fn get_enum() Flags {
@@ -89,63 +88,36 @@ pub fn get_stub_main(param [2]Flag_bits_main) {
 
 @[keep_args_alive]
 fn C.set_struct_array(&Struct_array)
-
 pub type PFN_set_struct_array = fn (&Struct_array)
-
 @[inline]
 pub fn set_struct_array(param &Struct_array) {
-	C.set_struct_array(param)
+  C.set_struct_array(param) 
 }
 
 @[keep_args_alive]
-fn C.set_const_struct_array(mut Struct_array)
-
-pub type PFN_set_const_struct_array = fn (mut Struct_array)
-
+fn C.set_const_struct_array(mut &Struct_array)
+pub type PFN_set_const_struct_array = fn (mut &Struct_array)
 @[inline]
-pub fn set_const_struct_array(mut param Struct_array) {
-	C.set_const_struct_array(mut param)
+pub fn set_const_struct_array(mut param &Struct_array) {
+  C.set_const_struct_array(mut param) 
 }
 
 @[keep_args_alive]
 fn C.set_enum_array([2]Flag_bits_main2)
-
 pub type PFN_set_enum_array = fn ([2]Flag_bits_main2)
-
 @[inline]
 pub fn set_enum_array(param [2]Flag_bits_main2) {
-	C.set_enum_array(param)
-}
-
-// @[keep_args_alive]
-// fn C.set_enum_array_submodule(voidptr, [2]sm.Flag_bits2)
-// pub type PFN_set_enum_array_submodule = fn (voidptr, [2]sm.Flag_bits2)
-// @[inline]
-// pub fn set_enum_array_submodule(param1 voidptr, param2 [2]sm.Flag_bits2) {
-//   C.set_enum_array_submodule(param1, param2)
-// }
-
-pub type Struct_array_handle = &C.struct_array
-
-@[keep_args_alive]
-fn C.set_struct_array_handle(mut Struct_array_handle)
-
-pub type PFN_set_struct_array_handle = fn (mut Struct_array_handle)
-
-@[inline]
-pub fn set_struct_array_handle(mut param Struct_array_handle) {
-	C.set_struct_array_handle(mut param)
+  C.set_enum_array(param) 
 }
 
 @[keep_args_alive]
-fn C.set_struct_array_handle_array(mut &Struct_array_handle)
-
-pub type PFN_set_struct_array_handle_array = fn (mut &Struct_array_handle)
-
+fn C.set_enum_array_submodule(voidptr, [2]sm.Flag_bits2)
+pub type PFN_set_enum_array_submodule = fn (voidptr, [2]sm.Flag_bits2)
 @[inline]
-pub fn set_struct_array_handle_array(mut param &Struct_array_handle) {
-	C.set_struct_array_handle_array(mut param)
+pub fn set_enum_array_submodule(param1 voidptr, param2 [2]sm.Flag_bits2) {
+  C.set_enum_array_submodule(param1, param2) 
 }
+
 
 fn main() {
 	string_array := get_string_array()
@@ -161,17 +133,10 @@ fn main() {
 	println('union_t value: ${union_t_value}')
 	sm.get_stub([2]sm.Flag_bits{init: sm.Flag_bits.bbb})
 	get_stub_main([2]Flag_bits_main{init: Flag_bits_main.bbbb})
-	set_struct_array(&struct_array)
+  set_struct_array(&struct_array)
 
-	// mut can_not_pass_expression_as_mut := [2]Flag_bits_main2{init: Flag_bits_main2.dsntmatter}
-	// set_enum_array(mut can_not_pass_expression_as_mut)
-	// set_enum_array([2]Flag_bits_main2{init: Flag_bits_main2.dsntmatter})
-	// set_enum_array_submodule(unsafe{nil}, [2]sm.Flag_bits2{init: sm.Flag_bits2.dsntmatter2})
-	mut struct_array_handle := Struct_array_handle(&struct_array)
-	set_struct_array_handle(mut struct_array_handle)
-	mut struct_array_handle_array := []Struct_array_handle{init: struct_array_handle, len: 1, cap: 1}
-	// mut struct_array_handle_array := [struct_array_handle].data // works as well
-  mut struct_array_handle_array_param := struct_array_handle_array.data	
-	set_struct_array_handle_array(mut struct_array_handle_array_param) //array can not be modified, so use a tmp variable?
-	
+  // mut can_not_pass_expression_as_mut := [2]Flag_bits_main2{init: Flag_bits_main2.dsntmatter}
+  // set_enum_array(mut can_not_pass_expression_as_mut)
+  set_enum_array([2]Flag_bits_main2{init: Flag_bits_main2.dsntmatter})
+  set_enum_array_submodule(unsafe{nil}, [2]sm.Flag_bits2{init: sm.Flag_bits2.dsntmatter2})
 }
