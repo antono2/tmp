@@ -110,22 +110,21 @@ pub fn set_enum_array(param [2]Flag_bits_main2) {
   C.set_enum_array(param) 
 }
 
-// @[keep_args_alive]
-// fn C.set_enum_array_submodule(param voidptr, paramm [2]sm.Flag_bits2)
-// pub type PFN_set_enum_array_submodule = fn (param voidptr, paramm [2]sm.Flag_bits2)
-// @[inline]
-// pub fn set_enum_array_submodule(param voidptr, paramm [2]sm.Flag_bits2) {
-//   C.set_enum_array_submodule(param, paramm) 
-// }
 @[keep_args_alive]
 fn C.set_enum_array_submodule(param voidptr, paramm [2]sm.Flag_bits2)
-pub type PFN_set_enum_array_submodule = fn (params Params)
+pub type PFN_set_enum_array_submodule = fn (param voidptr, paramm [2]sm.Flag_bits2)
 @[inline]
-pub fn set_enum_array_submodule(params Params) {
-  C.set_enum_array_submodule(params.param, params.paramm) 
+pub fn set_enum_array_submodule(param voidptr, paramm [2]sm.Flag_bits2) {
+  C.set_enum_array_submodule(param, paramm) 
 }
+// @[keep_args_alive]
+// fn C.set_enum_array_submodule(voidptr, [2]sm.Flag_bits2)
+// pub type PFN_set_enum_array_submodule = fn (Params)
+// @[inline]
+// pub fn set_enum_array_submodule(params Params) {
+//   C.set_enum_array_submodule(params.param, params.paramm) 
+// }
 
-@[params]
 pub struct Params{
 pub mut:
   param voidptr = unsafe{nil}
@@ -152,6 +151,6 @@ fn main() {
   // set_enum_array(mut can_not_pass_expression_as_mut)
   set_enum_array([2]Flag_bits_main2{init: Flag_bits_main2.dsntmatter})
   
-  // set_enum_array_submodule(unsafe{nil}, [2]sm.Flag_bits2{init: sm.Flag_bits2.dsntmatter2})
-  set_enum_array_submodule(Params{})
+  set_enum_array_submodule(unsafe{nil}, [2]sm.Flag_bits2{init: sm.Flag_bits2.dsntmatter2})
+  // set_enum_array_submodule(Params{})
 }
